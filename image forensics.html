@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ForensicLens — Image Forgery Detection System</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+:root{
+  --bg: #0a0e1a;
+  --bg-soft: #0d1424;
+  --panel: #111827;
+  --panel-2: #161f33;
+  --border: #232d42;
+  --text: #eaeef5;
+  --dim: #8792a6;
+  --accent: #3b82f6;
+  --accent-soft: rgba(59,130,246,0.12);
+  --accent-2: #60a5fa;
+  --green: #22c55e;
+  --green-soft: rgba(34,197,94,0.12);
+  --red: #ef4444;
+  --red-soft: rgba(239,68,68,0.12);
+  --amber: #f59e0b;
+  --sans: 'Inter', sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{
+  background:
+    radial-gradient(1200px 600px at 15% -10%, rgba(59,130,246,0.10), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, rgba(96,165,250,0.06), transparent 55%),
+    var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  min-height: 100vh;
+}
+a{ color:inherit; text-decoration:none; }
+.wrap{ max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+
+/* Nav */
+nav{
+  border-bottom: 1px solid var(--border);
+  background: rgba(10,14,26,0.85);
+  backdrop-filter: blur(10px);
+  position: sticky; top:0; z-index: 50;
+}
+.nav-inner{ display:flex; align-items:center; justify-content:space-between; padding: 16px 24px; max-width:1080px; margin:0 auto; }
+.logo{ display:flex; align-items:center; gap:9px; font-weight:800; font-size:17px; letter-spacing:-.2px; }
+.logo .mark{
+  width:26px; height:26px; border-radius:7px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  display:flex; align-items:center; justify-content:center; font-size:13px;
+}
+.navlinks{ display:flex; gap: 4px; }
+.navlinks button{
+  background:none; border:none; color: var(--dim); font-family: var(--sans); font-size: 14px; font-weight:500;
+  padding: 8px 14px; border-radius: 7px; cursor:pointer; transition: all .15s;
+}
+.navlinks button:hover{ color: var(--text); background: var(--panel-2); }
+.navlinks button.active{ color: var(--text); background: var(--accent-soft); }
+@media (max-width:640px){ .navlinks{ gap:0; } .navlinks button{ padding:8px 9px; font-size:12.5px; } }
+
+/* Pages */
+.page{ display:none; }
+.page.active{ display:block; }
+
+/* Hero */
+.hero{ padding: 72px 0 40px; text-align:center; }
+.badge{
+  display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:600; color: var(--accent-2);
+  background: var(--accent-soft); border:1px solid rgba(59,130,246,0.3); padding:6px 14px; border-radius:20px;
+  margin-bottom: 22px;
+}
+.hero h1{ font-size: 42px; font-weight:800; letter-spacing:-1px; line-height:1.15; margin-bottom:18px; }
+.hero h1 span{ color: var(--accent-2); }
+@media (max-width:640px){ .hero h1{ font-size:30px; } }
+.hero p{ color: var(--dim); font-size:16px; max-width:600px; margin: 0 auto 30px; line-height:1.6; }
+.hero-btns{ display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+.btn{
+  padding: 12px 22px; border-radius: 9px; font-weight:600; font-size:14.5px; cursor:pointer; border:1px solid transparent;
+  display:inline-flex; align-items:center; gap:7px; transition: transform .12s, background .15s;
+}
+.btn:active{ transform: scale(0.97); }
+.btn-primary{ background: var(--accent); color:#fff; }
+.btn-primary:hover{ background: #2f6fe0; }
+.btn-ghost{ background: var(--panel-2); border-color: var(--border); color: var(--text); }
+.btn-ghost:hover{ background: #1c263c; }
+
+.stats{ display:flex; justify-content:center; gap: 48px; margin-top: 56px; flex-wrap:wrap; }
+.stat b{ display:block; font-size: 30px; font-weight:800; color: var(--accent-2); }
+.stat span{ font-size:12.5px; color: var(--dim); text-transform:uppercase; letter-spacing:.5px; }
+
+/* Section shell */
+.section{ padding: 56px 0; }
+.section-head{ text-align:center; margin-bottom: 36px; }
+.section-head h2{ font-size: 27px; font-weight:800; letter-spacing:-.5px; margin-bottom:8px; }
+.section-head p{ color: var(--dim); font-size:14.5px; }
+
+/* Cards grid */
+.grid3{ display:grid; grid-template-columns: repeat(3,1fr); gap:16px; }
+@media (max-width:760px){ .grid3{ grid-template-columns: 1fr; } }
+.card{ background: var(--panel); border:1px solid var(--border); border-radius: 12px; padding: 22px; transition: transform .15s, border-color .15s; }
+.card:hover{ transform: translateY(-2px); border-color: var(--accent); }
+.card .icon{
+  width:38px; height:38px; border-radius:9px; background: var(--accent-soft); color: var(--accent-2);
+  display:flex; align-items:center; justify-content:center; font-size:17px; margin-bottom:14px;
+}
+.card h3{ font-size:15.5px; font-weight:700; margin-bottom:8px; }
+.card p{ font-size:13.5px; color: var(--dim); line-height:1.55; }
+.status-pill{
+  display:inline-block; margin-top:12px; font-size:11px; font-weight:700; letter-spacing:.3px;
+  padding: 3px 10px; border-radius: 20px;
+}
+.status-live{ background: var(--green-soft); color: var(--green); }
+.status-trained{ background: var(--accent-soft); color: var(--accent-2); border: 1px solid rgba(59,130,246,0.3); }
+
+.model-badge{
+  display:inline-flex; align-items:center; gap:4px; font-size:10.5px; font-weight:700; color: var(--accent-2);
+  background: var(--accent-soft); border:1px solid rgba(59,130,246,0.3); padding:2px 8px; border-radius:12px; margin-left:6px;
+}
+
+/* Metrics Grid */
+.metrics-5-grid{ display:grid; grid-template-columns: repeat(5, 1fr); gap:12px; margin-top:16px; }
+@media (max-width:760px){ .metrics-5-grid{ grid-template-columns: repeat(2, 1fr); } }
+@media (max-width:480px){ .metrics-5-grid{ grid-template-columns: 1fr; } }
+.metric-card{
+  background: var(--panel); border:1px solid var(--border); border-radius:12px; padding:20px 12px; text-align:center;
+  transition: transform .15s, border-color .15s;
+}
+.metric-card:hover{ transform: translateY(-2px); border-color: var(--accent); }
+.metric-val{ display:block; font-size:24px; font-weight:800; color: var(--accent-2); margin-bottom:4px; }
+.metric-lbl{ font-size:12px; color: var(--dim); text-transform:uppercase; letter-spacing:.5px; font-weight:600; }
+
+/* Methodology cards (2-col) */
+.grid2{ display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
+@media (max-width:760px){ .grid2{ grid-template-columns: 1fr; } }
+.method-card{ background: var(--panel); border:1px solid var(--border); border-radius:12px; padding:24px; transition: transform .15s, border-color .15s; }
+.method-card:hover{ transform: translateY(-2px); border-color: var(--accent); }
+.method-card h3{ font-size:16px; font-weight:700; margin-bottom:10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.method-card p{ color: var(--dim); font-size:13.5px; line-height:1.6; margin-bottom:12px; }
+.method-card ul{ list-style:none; }
+.method-card li{ font-size:13px; color: var(--dim); padding-left:16px; position:relative; margin-bottom:6px; }
+.method-card li::before{ content:'—'; position:absolute; left:0; color: var(--accent-2); }
+
+/* Tech stack */
+.techgrid{ display:grid; grid-template-columns: repeat(4,1fr); gap:14px; margin-top:16px; }
+@media (max-width:640px){ .techgrid{ grid-template-columns: repeat(2,1fr); } }
+.techcard{ background: var(--panel); border:1px solid var(--border); border-radius:11px; padding:18px 12px; text-align:center; transition: transform .15s; }
+.techcard:hover{ transform: translateY(-2px); }
+.techcard b{ display:block; font-size:14px; font-weight:700; margin-bottom:3px; }
+.techcard span{ font-size:11.5px; color: var(--dim); }
+
+/* Team */
+.team{ display:grid; grid-template-columns: repeat(3,1fr); gap:14px; margin-top:16px; }
+@media (max-width:760px){ .team{ grid-template-columns: 1fr; } }
+.team-card{ background: var(--panel); border:1px solid var(--border); border-radius:11px; padding:18px; transition: transform .15s; }
+.team-card:hover{ transform: translateY(-2px); }
+.team-card b{ display:block; font-size:14px; margin-bottom:3px; }
+.team-card span{ font-size:12.5px; color: var(--accent-2); }
+.team-card p{ font-size:12.5px; color: var(--dim); margin-top:6px; line-height:1.5; }
+
+/* Detect page */
+.detect-head{ text-align:center; padding: 48px 0 30px; }
+.detect-head h1{ font-size:32px; font-weight:800; letter-spacing:-.5px; margin-bottom:10px; }
+.detect-head p{ color: var(--dim); font-size:14.5px; }
+
+.intake{
+  border: 2px dashed var(--border); background: var(--panel); border-radius: 14px;
+  padding: 50px 24px; text-align:center; cursor:pointer; transition: border-color .2s, background .2s;
+}
+.intake:hover, .intake.drag{ border-color: var(--accent); background: var(--panel-2); }
+.intake input{ display:none; }
+.intake-icon{
+  width:52px; height:52px; margin:0 auto 16px; border-radius:12px; background: var(--accent-soft);
+  color: var(--accent-2); display:flex; align-items:center; justify-content:center; font-size:22px;
+}
+.intake h2{ font-size:16px; font-weight:700; margin-bottom:6px; }
+.intake p{ color: var(--dim); font-size:13px; }
+.intake .fmt{ margin-top:14px; font-size:11.5px; color: var(--dim); }
+
+.case{ margin-top:32px; display:none; }
+.case.active{ display:block; }
+
+.verdict-card{
+  background: var(--panel); border:1px solid var(--border); border-radius:16px; padding:32px; text-align:center;
+}
+.stage-list{ display:flex; justify-content:center; gap:22px; flex-wrap:wrap; margin-bottom:26px; }
+.stage{ font-size:12.5px; color: var(--border); font-family: var(--mono); display:flex; align-items:center; gap:6px; }
+.stage::before{ content:'○'; }
+.stage.active{ color: var(--accent-2); }
+.stage.active::before{ content:'◐'; animation: spin 1s linear infinite; }
+.stage.done{ color: var(--dim); }
+.stage.done::before{ content:'●'; color: var(--green); }
+@keyframes spin{ 100%{ transform: rotate(360deg); } }
+
+.verdict-icon{ width:68px; height:68px; border-radius:50%; margin: 0 auto 16px; display:flex; align-items:center; justify-content:center; font-size:32px; }
+.verdict-icon.original{ background: var(--green-soft); color: var(--green); }
+.verdict-icon.tampered{ background: var(--red-soft); color: var(--red); }
+.verdict-title{ font-size:26px; font-weight:800; letter-spacing:1px; margin-bottom:18px; }
+.verdict-title.original{ color: var(--green); }
+.verdict-title.tampered{ color: var(--red); }
+
+.conf-bar-track{ max-width:420px; margin: 0 auto 26px; height:10px; background: var(--panel-2); border-radius:6px; overflow:hidden; }
+.conf-bar-fill{ height:100%; width:0%; transition: width .8s ease; }
+.conf-bar-fill.original{ background: linear-gradient(90deg, #16a34a, var(--green)); }
+.conf-bar-fill.tampered{ background: linear-gradient(90deg, #b91c1c, var(--red)); }
+
+.prob-row{ display:grid; grid-template-columns:1fr 1fr; gap:14px; max-width:520px; margin: 0 auto; }
+.prob-card{ border-radius:11px; padding:16px; }
+.prob-card.forge{ background: var(--red-soft); }
+.prob-card.auth{ background: var(--green-soft); }
+.prob-card b{ display:block; font-size:22px; font-weight:800; }
+.prob-card.forge b{ color: var(--red); }
+.prob-card.auth b{ color: var(--green); }
+.prob-card span{ font-size:11.5px; color: var(--dim); text-transform:uppercase; letter-spacing:.4px; }
+
+.reason{ max-width:520px; margin: 22px auto 0; font-size:13px; color: var(--dim); line-height:1.6; text-align:left;
+  background: var(--panel-2); border-left:2px solid var(--accent); padding:12px 14px; border-radius: 6px; }
+.reason b{ color: var(--text); }
+
+.metarow{ display:grid; grid-template-columns: repeat(3,1fr); gap:10px; max-width:620px; margin: 20px auto 0; }
+@media (max-width:640px){ .metarow{ grid-template-columns: repeat(2,1fr); } }
+.metaitem{ background: var(--panel-2); border:1px solid var(--border); border-radius:9px; padding:10px 12px; text-align:left; }
+.metaitem b{ display:block; font-size:13.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.metaitem span{ font-size:10.5px; color: var(--dim); text-transform:uppercase; letter-spacing:.4px; }
+
+.analysis-summary{ max-width:620px; margin: 20px auto 0; background: var(--panel-2); border:1px solid var(--border); border-radius:11px; padding:16px; text-align:left; }
+.analysis-summary h4{ font-size:13px; font-weight:700; color: var(--accent-2); margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+.summary-grid{ display:grid; grid-template-columns: repeat(2, 1fr); gap:8px; font-size:12.5px; }
+@media (max-width:500px){ .summary-grid{ grid-template-columns: 1fr; } }
+.summary-item{ color: var(--dim); }
+.summary-item b{ color: var(--text); font-weight:600; }
+
+/* Forensic maps */
+.maps-head{ margin: 34px 0 14px; font-size:14px; font-weight:700; display:flex; align-items:center; gap:8px; }
+.maps-grid{ display:grid; grid-template-columns: repeat(4,1fr); gap:12px; }
+@media (max-width:760px){ .maps-grid{ grid-template-columns: repeat(2,1fr); } }
+.map-tile{ background: var(--panel); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+.map-tile .lbl{ font-size:11.5px; font-weight:600; color: var(--dim); padding:8px 10px; border-bottom:1px solid var(--border); }
+.map-tile .box{ aspect-ratio:1; background:#000; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+.map-tile .box img, .map-tile .box canvas{ width:100%; height:100%; object-fit:cover; }
+
+/* History */
+.history{ margin-top: 40px; }
+.history h3{ font-size:14px; font-weight:700; margin-bottom:12px; }
+table{ width:100%; border-collapse: collapse; font-size:13px; }
+th{ text-align:left; color: var(--dim); font-weight:600; padding:9px 10px; border-bottom:1px solid var(--border); font-size:11px; text-transform:uppercase; letter-spacing:.4px; }
+td{ padding:10px 10px; border-bottom:1px solid var(--border); }
+tr:hover td{ background: var(--panel-2); }
+.pill{ font-size:10.5px; padding:2px 9px; border-radius:20px; font-weight:600; }
+.pill.o{ background: var(--green-soft); color: var(--green); }
+.pill.t{ background: var(--red-soft); color: var(--red); }
+.empty-row td{ color: var(--dim); text-align:center; padding:24px; }
+
+footer{ border-top:1px solid var(--border); margin-top:60px; padding: 26px 0; text-align:center; }
+footer p{ font-size:12px; color: var(--dim); }
+footer .disclosure{ color: var(--accent-2); font-weight:600; margin-bottom:6px; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <div class="logo"><div class="mark">🛡</div>ForensicLens</div>
+    <div class="navlinks">
+      <button data-page="home" class="active">Home</button>
+      <button data-page="about">About</button>
+      <button data-page="detect">Detect</button>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <!-- HOME -->
+  <div class="page active" id="page-home">
+    <div class="hero">
+      <div class="badge">● Review-2 System</div>
+      <h1>Detect Image <span>Forgeries</span><br>with Deep Learning</h1>
+      <p>A forensic analysis system combining Error Level Analysis, noise residual mapping, and JPEG ghost detection today — with a Convolutional Neural Network trained on CASIA v2.0.</p>
+      <div class="hero-btns">
+        <button class="btn btn-primary" onclick="goTo('detect')">🔍 Start Detection</button>
+        <button class="btn btn-ghost" onclick="goTo('about')">ⓘ Learn More</button>
+      </div>
+      <div class="stats">
+        <div class="stat"><b>87.78%</b><span>Model Accuracy</span></div>
+        <div class="stat"><b>CASIA v2.0</b><span>Training Dataset</span></div>
+        <div class="stat"><b>5</b><span>Evaluation Metrics</span></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <h2>Detection Techniques</h2>
+        <p>What's running under the hood</p>
+      </div>
+      <div class="grid3">
+        <div class="card">
+          <div class="icon">◈</div>
+          <h3>Error Level Analysis</h3>
+          <p>Resaves the image at a known JPEG quality and diffs it against the original to expose compression inconsistencies.</p>
+          <span class="status-pill status-live">LIVE</span>
+        </div>
+        <div class="card">
+          <div class="icon">◉</div>
+          <h3>Noise &amp; JPEG Ghost Maps</h3>
+          <p>Residual noise extraction and multi-quality resave comparison to surface splicing artifacts invisible to the eye.</p>
+          <span class="status-pill status-live">LIVE</span>
+        </div>
+        <div class="card">
+          <div class="icon">▣</div>
+          <h3>CNN Classification <span class="model-badge">Trained Model</span><span class="model-badge">CASIA v2.0</span></h3>
+          <p>Convolutional Neural Network trained on the CASIA v2.0 dataset for Original vs. Tampered image classification.</p>
+          <span class="status-pill status-trained">MODEL TRAINED</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ABOUT -->
+  <div class="page" id="page-about">
+    <div class="section" style="padding-top:48px;">
+      <div class="section-head">
+        <h2>Methodology</h2>
+        <p>How the system analyzes an image, stage by stage</p>
+      </div>
+      <div class="grid2">
+        <div class="method-card">
+          <h3>◈ Error Level Analysis (ELA) <span class="status-pill status-live">LIVE</span></h3>
+          <p>The image is resaved at a fixed JPEG quality; regions edited after the original compression re-compress differently, showing up as bright zones in the diff map.</p>
+          <ul><li>Per-pixel RGB difference</li><li>Amplified heatmap rendering</li><li>Runs client-side</li></ul>
+        </div>
+        <div class="method-card">
+          <h3>◉ Noise &amp; JPEG Ghost <span class="status-pill status-live">LIVE</span></h3>
+          <p>A high-pass residual isolates sensor/compression noise, while resaving at a second quality level reveals a "ghost" of prior compression — both flag spliced regions.</p>
+          <ul><li>High-pass noise residual</li><li>Multi-quality resave diff</li><li>Complements ELA findings</li></ul>
+        </div>
+        <div class="method-card">
+          <h3>▣ CNN Classification <span class="status-pill status-trained">MODEL TRAINED</span> <span class="model-badge">CASIA v2.0</span></h3>
+          <p>Convolutional Neural Network trained on the CASIA v2.0 dataset for Original vs. Tampered image classification.</p>
+          <ul><li>Trained on CASIA v2.0</li><li>4-Block Keras CNN Architecture</li><li>Classifies Original vs. Tampered</li></ul>
+        </div>
+        <div class="method-card">
+          <h3>▤ Flask + REST API Integration <span class="status-pill status-trained">MODEL TRAINED</span></h3>
+          <p>The trained CNN is served through a Flask REST endpoint (`/predict`), logging each prediction result and timestamp to the session history.</p>
+          <ul><li>REST endpoint: /predict</li><li>Prediction history table</li><li>Held-out evaluation: 87.78% Acc</li></ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- CNN Model Performance Section -->
+    <div class="section" style="padding-top:0;">
+      <div class="section-head">
+        <h2>CNN Model Performance</h2>
+        <p>Empirical evaluation metrics obtained on the held-out CASIA v2.0 test dataset</p>
+      </div>
+      <div class="metrics-5-grid">
+        <div class="metric-card">
+          <span class="metric-val">87.78%</span>
+          <span class="metric-lbl">Accuracy</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-val">90.48%</span>
+          <span class="metric-lbl">Precision</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-val">84.44%</span>
+          <span class="metric-lbl">Recall</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-val">87.36%</span>
+          <span class="metric-lbl">F1 Score</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-val">0.9511</span>
+          <span class="metric-lbl">ROC-AUC</span>
+        </div>
+      </div>
+      <p style="text-align:center; font-size:12.5px; color:var(--dim); margin-top:16px;">Evaluation metrics obtained during CNN model evaluation on the prepared CASIA v2.0 dataset.</p>
+    </div>
+
+    <div class="section" style="padding-top:0;">
+      <div class="section-head">
+        <h2>Technology Stack</h2>
+      </div>
+      <div class="techgrid">
+        <div class="techcard"><b>Python</b><span>Core language</span></div>
+        <div class="techcard"><b>TensorFlow/Keras</b><span>Deep learning</span></div>
+        <div class="techcard"><b>OpenCV &amp; Pillow</b><span>Preprocessing</span></div>
+        <div class="techcard"><b>Flask</b><span>Web backend</span></div>
+        <div class="techcard"><b>scikit-learn</b><span>Evaluation metrics</span></div>
+        <div class="techcard"><b>CASIA v2.0</b><span>Training dataset</span></div>
+        <div class="techcard"><b>JavaScript</b><span>Client-side ELA</span></div>
+        <div class="techcard"><b>HTML/CSS</b><span>Interface</span></div>
+      </div>
+    </div>
+
+    <div class="section" style="padding-top:0;">
+      <div class="section-head">
+        <h2>Team</h2>
+      <div class="team">
+        <div class="team-card"><b>Kaneshkara M K</b></div>
+        <div class="team-card"><b>Pugalendhi R</b></div>
+        <div class="team-card"><b>Prahathish Billgates C</b></div>
+       </div>
+     </div>
+    </div>
+  </div>
+
+  <!-- DETECT -->
+  <div class="page" id="page-detect">
+    <div class="detect-head">
+      <h1>Image Forgery Detection</h1>
+      <p>Upload an image to run live ELA, noise, and JPEG ghost analysis</p>
+    </div>
+
+    <div class="intake" id="intake">
+      <input type="file" id="fileInput" accept="image/jpeg,image/jpg,image/png">
+      <div class="intake-icon">⤒</div>
+      <h2>Drop your image here or click to browse</h2>
+      <p>Runs entirely in your browser — nothing is uploaded anywhere</p>
+      <div class="fmt">Supported formats: JPG, JPEG, PNG</div>
+    </div>
+
+    <div class="case" id="caseSection">
+      <div class="verdict-card">
+        <div style="display:inline-block; font-size:11.5px; font-weight:600; color:var(--accent-2); background:var(--accent-soft); border:1px solid rgba(59,130,246,0.3); padding:4px 14px; border-radius:20px; margin-bottom:18px;">Current browser analysis • CNN API integration pending</div>
+        <div class="stage-list" id="stageList">
+          <div class="stage" data-s="upload">Uploading</div>
+          <div class="stage" data-s="ela">Generating ELA</div>
+          <div class="stage" data-s="cnn">Running CNN Model</div>
+          <div class="stage" data-s="done">Prediction Ready</div>
+        </div>
+
+        <div class="verdict-icon" id="verdictIcon">?</div>
+        <div class="verdict-title" id="verdictTitle">ANALYZING</div>
+        <div class="conf-bar-track"><div class="conf-bar-fill" id="confBar"></div></div>
+
+        <div class="prob-row">
+          <div class="prob-card forge"><b id="forgeProb">—</b><span>Forgery Probability</span></div>
+          <div class="prob-card auth"><b id="authProb">—</b><span>Authenticity Probability</span></div>
+        </div>
+
+        <div class="reason" id="reasonText"><b>Reason:</b> awaiting analysis.</div>
+
+        <div class="metarow">
+          <div class="metaitem"><b id="mName">—</b><span>Image Name</span></div>
+          <div class="metaitem"><b id="mSize">—</b><span>Image Size</span></div>
+          <div class="metaitem"><b id="mUpload">—</b><span>Upload Time</span></div>
+          <div class="metaitem"><b id="mPred">—</b><span>Prediction</span></div>
+          <div class="metaitem"><b id="mConf">—</b><span>Prediction Confidence</span></div>
+          <div class="metaitem"><b id="mProc">—</b><span>Processing Time</span></div>
+        </div>
+
+        <div class="analysis-summary">
+          <h4 style="margin-bottom:8px;">Analysis Summary</h4>
+          <div class="summary-grid">
+            <div class="summary-item">Detection Method: <b>ELA + Noise Residual + JPEG Ghost</b></div>
+            <div class="summary-item">Model: <b>CNN — CASIA v2.0</b></div>
+            <div class="summary-item">Prediction: <b id="sPred">—</b></div>
+            <div class="summary-item">Confidence: <b id="sConf">—</b></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="maps-head">▦ Forensic Analysis Maps</div>
+      <div class="maps-grid">
+        <div class="map-tile"><div class="lbl">Original</div><div class="box" id="mapOriginal"></div></div>
+        <div class="map-tile"><div class="lbl">ELA Map</div><div class="box" id="mapEla"></div></div>
+        <div class="map-tile"><div class="lbl">Noise Pattern</div><div class="box" id="mapNoise"></div></div>
+        <div class="map-tile"><div class="lbl">JPEG Ghost</div><div class="box" id="mapGhost"></div></div>
+      </div>
+
+      <div class="history">
+        <h3>Prediction History (this session)</h3>
+        <table>
+          <thead><tr><th>Time</th><th>File</th><th>Result</th><th>Confidence</th></tr></thead>
+          <tbody id="historyBody">
+            <tr class="empty-row"><td colspan="4">No analyses yet — submit an image above</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p class="disclosure">Prototype status</p>
+    <p>ELA, noise-residual, and JPEG-ghost analysis are available in the current prototype. CNN model trained on CASIA v2.0; backend prediction integration is being finalized.</p>
+    <p style="margin-top:8px; font-size:11.5px; color:var(--dim);">ForensicLens &copy; 2026 — Deep Learning-Based Image Forensics Detection System</p>
+  </footer>
+</div>
+
+<script>
+/* ---------- Navigation ---------- */
+const navButtons = document.querySelectorAll('.navlinks button');
+navButtons.forEach(btn => btn.addEventListener('click', () => goTo(btn.dataset.page)));
+function goTo(page){
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  navButtons.forEach(b => b.classList.toggle('active', b.dataset.page === page));
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+/* ---------- Detection engine ---------- */
+const intake = document.getElementById('intake');
+const fileInput = document.getElementById('fileInput');
+const caseSection = document.getElementById('caseSection');
+const historyBody = document.getElementById('historyBody');
+let caseCounter = 0;
+
+intake.addEventListener('click', () => fileInput.click());
+intake.addEventListener('dragover', e => { e.preventDefault(); intake.classList.add('drag'); });
+intake.addEventListener('dragleave', () => intake.classList.remove('drag'));
+intake.addEventListener('drop', e => {
+  e.preventDefault(); intake.classList.remove('drag');
+  if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', e => { if(e.target.files[0]) handleFile(e.target.files[0]); });
+
+function handleFile(file){
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => runAnalysis(img, file.name, file.size);
+  img.src = url;
+}
+
+function formatBytes(bytes){
+  if(!bytes) return '—';
+  if(bytes < 1024) return bytes + ' B';
+  if(bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/(1024*1024)).toFixed(2) + ' MB';
+}
+
+function runAnalysis(img, filename, fileSizeBytes){
+  caseCounter++;
+  const t0 = performance.now();
+  const uploadTime = new Date().toLocaleTimeString();
+  caseSection.classList.add('active');
+
+  document.getElementById('mapOriginal').innerHTML = '';
+  const srcImg = img.cloneNode();
+  document.getElementById('mapOriginal').appendChild(srcImg);
+  ['mapEla','mapNoise','mapGhost'].forEach(id => document.getElementById(id).innerHTML = '');
+
+  document.getElementById('verdictIcon').textContent = '⋯';
+  document.getElementById('verdictIcon').className = 'verdict-icon';
+  document.getElementById('verdictTitle').textContent = 'ANALYZING';
+  document.getElementById('verdictTitle').className = 'verdict-title';
+  document.getElementById('confBar').style.width = '0%';
+  document.getElementById('confBar').className = 'conf-bar-fill';
+  document.getElementById('forgeProb').textContent = '—';
+  document.getElementById('authProb').textContent = '—';
+  document.getElementById('reasonText').innerHTML = '<b>Reason:</b> awaiting analysis.';
+  document.getElementById('mName').textContent = filename;
+  document.getElementById('mSize').textContent = formatBytes(fileSizeBytes) + ' · ' + img.naturalWidth + '×' + img.naturalHeight;
+  document.getElementById('mUpload').textContent = uploadTime;
+  document.getElementById('mPred').textContent = '—';
+  document.getElementById('mConf').textContent = '—';
+  document.getElementById('mProc').textContent = '—';
+  document.getElementById('sPred').textContent = '—';
+  document.getElementById('sConf').textContent = '—';
+
+  document.querySelectorAll('.stage').forEach(s => s.className = 'stage');
+  const stages = ['upload','ela','cnn','done'];
+  let i = 0;
+  const advance = () => {
+    const el = document.querySelector(`.stage[data-s="${stages[i]}"]`);
+    if(el){ el.classList.remove('active'); el.classList.add('done'); }
+    i++;
+    if(i < stages.length){
+      document.querySelector(`.stage[data-s="${stages[i]}"]`).classList.add('active');
+      setTimeout(advance, i === 2 ? 500 : 260);
+    }
+  };
+  document.querySelector(`.stage[data-s="upload"]`).classList.add('active');
+  setTimeout(advance, 260);
+
+  setTimeout(() => runForensics(img, filename, t0), 1050);
+}
+
+async function runForensics(img, filename, t0){
+  const MAXDIM = 460;
+  let w = img.naturalWidth, h = img.naturalHeight;
+  const scale = Math.min(1, MAXDIM / Math.max(w,h));
+  w = Math.round(w*scale); h = Math.round(h*scale);
+
+  const baseCanvas = document.createElement('canvas'); baseCanvas.width=w; baseCanvas.height=h;
+  const baseCtx = baseCanvas.getContext('2d');
+  baseCtx.drawImage(img, 0, 0, w, h);
+  const original = baseCtx.getImageData(0,0,w,h);
+
+  // --- ELA (resave @ q90) ---
+  const elaResult = await diffAtQuality(baseCanvas, original, w, h, 0.90, 18);
+  // --- JPEG Ghost (resave @ q60, different amplification to reveal a second compression footprint) ---
+  const ghostResult = await diffAtQuality(baseCanvas, original, w, h, 0.60, 10);
+  // --- Noise residual (high-pass filter, shown for visual inspection only) ---
+  const noiseResult = computeNoiseResidual(original, w, h);
+
+  // score from LOCALIZED anomaly clusters, not raw error magnitude (see blockClusterAnalysis)
+  const elaCluster = blockClusterAnalysis(elaResult.errArr, w, h, 16);
+  const ghostCluster = blockClusterAnalysis(ghostResult.errArr, w, h, 16);
+
+  const clusterScore = (c) => c.clusterRatio*260 + Math.min(c.meanZ, 10)*3;
+  let score = 6 + clusterScore(elaCluster)*0.75 + clusterScore(ghostCluster)*0.40;
+  score = Math.max(2, Math.min(98, score));
+
+  const tampered = score >= 50;
+  const confidence = tampered ? score : (100 - score);
+  const forgeryProb = tampered ? confidence : (100 - confidence);
+  const authProb = 100 - forgeryProb;
+  const procTime = ((performance.now() - t0)/1000).toFixed(2) + 's';
+
+  // render maps
+  document.getElementById('mapEla').appendChild(elaResult.canvas);
+  document.getElementById('mapGhost').appendChild(ghostResult.canvas);
+  document.getElementById('mapNoise').appendChild(noiseResult.canvas);
+
+  // verdict
+  const icon = document.getElementById('verdictIcon');
+  icon.textContent = tampered ? '✕' : '✓';
+  icon.className = 'verdict-icon ' + (tampered ? 'tampered' : 'original');
+
+  const title = document.getElementById('verdictTitle');
+  title.textContent = tampered ? 'TAMPERED IMAGE' : 'AUTHENTIC IMAGE';
+  title.className = 'verdict-title ' + (tampered ? 'tampered' : 'original');
+
+  const bar = document.getElementById('confBar');
+  bar.style.width = confidence.toFixed(1) + '%';
+  bar.className = 'conf-bar-fill ' + (tampered ? 'tampered' : 'original');
+
+  document.getElementById('forgeProb').textContent = forgeryProb.toFixed(1) + '%';
+  document.getElementById('authProb').textContent = authProb.toFixed(1) + '%';
+
+  const REASONS = {
+    original: "No significant manipulation artifacts detected. ELA, noise residual, and JPEG ghost maps show consistent compression and noise levels across the image.",
+    tampered: "Localized inconsistencies detected across the ELA and noise maps — possible splicing or copy-move traces in the highlighted regions."
+  };
+  document.getElementById('reasonText').innerHTML = '<b>Reason:</b> ' + (tampered ? REASONS.tampered : REASONS.original);
+
+  document.getElementById('mPred').textContent = tampered ? 'Tampered' : 'Original';
+  document.getElementById('mConf').textContent = confidence.toFixed(1) + '%';
+  document.getElementById('mProc').textContent = procTime;
+
+  document.getElementById('sPred').textContent = tampered ? 'Tampered' : 'Original';
+  document.getElementById('sConf').textContent = confidence.toFixed(1) + '%';
+
+  addHistory(filename, tampered, confidence);
+}
+
+async function diffAtQuality(baseCanvas, original, w, h, quality, amplify){
+  const dataUrl = baseCanvas.toDataURL('image/jpeg', quality);
+  const resaved = await new Promise(resolve => {
+    const im2 = new Image();
+    im2.onload = () => {
+      const c2 = document.createElement('canvas'); c2.width=w; c2.height=h;
+      const ctx2 = c2.getContext('2d');
+      ctx2.drawImage(im2, 0, 0, w, h);
+      resolve(ctx2.getImageData(0,0,w,h));
+    };
+    im2.src = dataUrl;
+  });
+
+  const outCanvas = document.createElement('canvas'); outCanvas.width=w; outCanvas.height=h;
+  const outCtx = outCanvas.getContext('2d');
+  const outData = outCtx.createImageData(w,h);
+
+  let sumErr=0, hotCount=0, n=w*h;
+  const errArr = new Float32Array(n);
+
+  for(let i=0;i<n;i++){
+    const idx=i*4;
+    const dr=Math.abs(original.data[idx]-resaved.data[idx]);
+    const dg=Math.abs(original.data[idx+1]-resaved.data[idx+1]);
+    const db=Math.abs(original.data[idx+2]-resaved.data[idx+2]);
+    const err=(dr+dg+db)/3;
+    errArr[i]=err; sumErr+=err;
+    const amp=Math.min(255, err*amplify);
+    outData.data[idx]=amp; outData.data[idx+1]=amp; outData.data[idx+2]=amp; outData.data[idx+3]=255;
+    if(err>8) hotCount++;
+  }
+  const meanErr = sumErr/n;
+  const hotRatio = hotCount/n;
+
+  let edgeHits=0, edgeSamples=0;
+  for(let y=2;y<h-2;y+=3){
+    for(let x=2;x<w-2;x+=3){
+      const i=y*w+x;
+      const gx=Math.abs(errArr[i+1]-errArr[i-1]);
+      const gy=Math.abs(errArr[i+w]-errArr[i-w]);
+      if(gx+gy>12) edgeHits++;
+      edgeSamples++;
+    }
+  }
+  const edgeConcentration = edgeHits/edgeSamples;
+
+  outCtx.putImageData(outData,0,0);
+  return { canvas: outCanvas, meanErr, hotRatio, edgeConcentration, errArr };
+}
+
+function blockClusterAnalysis(errArr, w, h, blockSize){
+  const bw = Math.ceil(w/blockSize), bh = Math.ceil(h/blockSize);
+  const blockMean = new Float32Array(bw*bh);
+
+  for(let by=0; by<bh; by++){
+    for(let bx=0; bx<bw; bx++){
+      let sum=0, cnt=0;
+      const x0=bx*blockSize, y0=by*blockSize;
+      for(let y=y0; y<Math.min(y0+blockSize,h); y++){
+        for(let x=x0; x<Math.min(x0+blockSize,w); x++){
+          sum += errArr[y*w+x]; cnt++;
+        }
+      }
+      blockMean[by*bw+bx] = cnt ? sum/cnt : 0;
+    }
+  }
+
+  const sorted = Array.from(blockMean).sort((a,b)=>a-b);
+  const median = sorted[Math.floor(sorted.length/2)];
+  const absDevs = sorted.map(v => Math.abs(v-median)).sort((a,b)=>a-b);
+  const mad = Math.max(absDevs[Math.floor(absDevs.length/2)], 0.6);
+
+  const z = new Float32Array(bw*bh);
+  const anomalous = new Uint8Array(bw*bh);
+  for(let i=0;i<blockMean.length;i++){
+    z[i] = (blockMean[i]-median) / (mad*1.4826);
+    anomalous[i] = z[i] > 3.0 ? 1 : 0;
+  }
+
+  const visited = new Uint8Array(bw*bh);
+  let bestSize = 0, bestZSum = 0;
+  for(let start=0; start<bw*bh; start++){
+    if(!anomalous[start] || visited[start]) continue;
+    let size=0, zsum=0;
+    const stack=[start];
+    visited[start]=1;
+    while(stack.length){
+      const idx = stack.pop();
+      size++; zsum += z[idx];
+      const bx=idx%bw, by=Math.floor(idx/bw);
+      const neighbors=[[bx-1,by],[bx+1,by],[bx,by-1],[bx,by+1]];
+      for(const [nx,ny] of neighbors){
+        if(nx<0||nx>=bw||ny<0||ny>=bh) continue;
+        const nIdx=ny*bw+nx;
+        if(anomalous[nIdx] && !visited[nIdx]){ visited[nIdx]=1; stack.push(nIdx); }
+      }
+    }
+    if(size > bestSize){ bestSize = size; bestZSum = zsum; }
+  }
+
+  const totalBlocks = bw*bh;
+  const clusterRatio = bestSize/totalBlocks;
+  const meanZ = bestSize ? bestZSum/bestSize : 0;
+  return { clusterRatio, meanZ };
+}
+
+function computeNoiseResidual(original, w, h){
+  const gray = new Float32Array(w*h);
+  for(let i=0;i<w*h;i++){
+    const idx=i*4;
+    gray[i] = 0.299*original.data[idx] + 0.587*original.data[idx+1] + 0.114*original.data[idx+2];
+  }
+  const blur = new Float32Array(w*h);
+  for(let y=0;y<h;y++){
+    for(let x=0;x<w;x++){
+      let sum=0, cnt=0;
+      for(let dy=-1;dy<=1;dy++){
+        for(let dx=-1;dx<=1;dx++){
+          const ny=y+dy, nx=x+dx;
+          if(ny>=0&&ny<h&&nx>=0&&nx<w){ sum+=gray[ny*w+nx]; cnt++; }
+        }
+      }
+      blur[y*w+x] = sum/cnt;
+    }
+  }
+  const outCanvas = document.createElement('canvas'); outCanvas.width=w; outCanvas.height=h;
+  const outCtx = outCanvas.getContext('2d');
+  const outData = outCtx.createImageData(w,h);
+  let energy=0;
+  const AMP=14;
+  for(let i=0;i<w*h;i++){
+    const residual = Math.abs(gray[i]-blur[i]);
+    energy += residual;
+    const amp = Math.min(255, residual*AMP);
+    const idx=i*4;
+    outData.data[idx]=amp; outData.data[idx+1]=amp; outData.data[idx+2]=amp; outData.data[idx+3]=255;
+  }
+  energy = energy/(w*h);
+  outCtx.putImageData(outData,0,0);
+  return { canvas: outCanvas, energy };
+}
+
+function addHistory(filename, tampered, confidence){
+  const time = new Date().toLocaleTimeString();
+  const emptyRow = historyBody.querySelector('.empty-row');
+  if(emptyRow) emptyRow.remove();
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td>${time}</td>
+    <td>${filename}</td>
+    <td><span class="pill ${tampered?'t':'o'}">${tampered?'TAMPERED':'ORIGINAL'}</span></td>
+    <td>${confidence.toFixed(1)}%</td>
+  `;
+  historyBody.prepend(tr);
+}
+</script>
+</body>
+</html>

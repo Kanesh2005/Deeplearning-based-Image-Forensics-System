@@ -1,0 +1,17 @@
+============================================================
+       SPECTRA::FORENSICS - SERVER RUNNING INSTRUCTIONS
+============================================================
+
+To start the Flask Web Application Server:
+
+1. Open PowerShell or Command Prompt in the project root:
+   cd c:\Users\keshk\OneDrive\Desktop\image
+
+2. Run the server command:
+   .\venv\Scripts\python.exe app.py
+
+3. Server will start at:
+   http://127.0.0.1:5000
+
+Note: Press Ctrl+C in terminal to stop the server.
+============================================================

@@ -1,0 +1,32 @@
+============================================================
+       SPECTRA::FORENSICS - HOW TO RUN THE PROJECT
+============================================================
+
+Option 1: Direct Command (Recommended)
+-----------------------------------------------------------
+1. Open Terminal / Command Prompt / PowerShell in this folder:
+   c:\Users\keshk\OneDrive\Desktop\image
+
+2. Run the application using the project virtual environment:
+   .\venv\Scripts\python.exe app.py
+
+3. Open your browser and navigate to:
+   http://127.0.0.1:5000
+
+============================================================
+Option 2: Activating Virtual Environment First
+-----------------------------------------------------------
+1. In Command Prompt (CMD):
+   venv\Scripts\activate.bat
+   python app.py
+
+2. In PowerShell:
+   .\venv\Scripts\Activate.ps1
+   python app.py
+
+============================================================
+Option 3: Quick Batch File Execution
+-----------------------------------------------------------
+Double-click `run_app.bat` or run:
+   .\run_app.bat
+============================================================
